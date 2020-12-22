@@ -67,7 +67,8 @@ def run(**kwargs):
     #### START INFERENCE
     time_total = 0.
     with torch.no_grad():
-        for idx, imagename in tqdm.tqdm(enumerate(imagelist), total=len(imagelist)):
+        # for idx, imagename in tqdm.tqdm(enumerate(imagelist), total=len(imagelist)):
+        for idx, imagename in enumerate(imagelist):
             ### LOAD AND PREPROCESS IMAGE
             path = os.path.join(kwargs['data_path'], imagename)
             img = Image.open(path).convert('RGB')

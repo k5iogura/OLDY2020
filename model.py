@@ -1,4 +1,4 @@
-import os
+import os,sys
 
 import torch.nn as nn
 import torch
@@ -102,14 +102,26 @@ class EfficientNet(nn.Module):
         print("Shape _conv_stem = {}".format(x1.shape))
         x = self.model._act(self.model._bn0(x1))
         print("Shape _act = {}".format(x.shape))
+        print("\n--- START INFERENCE ---")
         feature_maps = []
+        outNo = 1
         for idx, block in enumerate(self.model._blocks):
             drop_connect_rate = self.model._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
+            xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
+            blockMark = '  '
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
+                blockMark = "C{:1d}".format(outNo)
+                outNo += 1
+            else:
+                sys.stdout.write(" "*2)
+            for i in block.__dict__['_modules'].keys():print(block.__dict__['_modules'][i])
+            sys.stdout.write("{}** {:10d}-{} in={} go={}\t**\n".format(blockMark, idx, block._get_name(), xin_shape, x.shape))
+            #set_trace()
+            pass
 
         return feature_maps
 
