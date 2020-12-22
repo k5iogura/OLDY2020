@@ -3,6 +3,7 @@ import os
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+from pdb import set_trace
 
 from backbone import EfficientNet as EffNet
 
@@ -95,7 +96,12 @@ class EfficientNet(nn.Module):
         self.model = model
 
     def forward(self, x):
-        x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
+        # x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
+        print("Shape InX = {}".format(x.shape))
+        x1= self.model._conv_stem(x)
+        print("Shape _conv_stem = {}".format(x1.shape))
+        x = self.model._act(self.model._bn0(x1))
+        print("Shape _act = {}".format(x.shape))
         feature_maps = []
         for idx, block in enumerate(self.model._blocks):
             drop_connect_rate = self.model._global_params.drop_connect_rate
@@ -135,16 +141,20 @@ class MalignancyDetector(nn.Module):
         self._init_weight()
 
     def forward(self, x):
-        _, c2, _, c4 = self.base_forward(x)
+        print("Shape x    = {}".format(x.shape))
+        #_, c2, _, c4 = self.base_forward(x)
+        _1, c2, _3, c4 = self.base_forward(x)
+        outR= self._act(self._conv_head(c4))
 
-        out = self._act(self._conv_head(c4))
+        out2= self.r_aspp(outR, c2)
 
-        out = self.r_aspp(out, c2)
+        out3= self.last_conv(out2)
 
-        out = self.last_conv(out)
+        mask = F.interpolate(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
 
-        mask = F.interpolate(out, size=x.size()[2:], mode='bilinear', align_corners=True)
-
+        print("Shape B._1 = {} c2 = {} _3 = {} c4 = {}".format(_1.shape, c2.shape, _3.shape, c4.shape))
+        print("Shape outR = {} out2 = {} out3 = {}".format(outR.shape, out2.shape, out3.shape))
+        print("Shape Mask = {}".format(mask.shape))
         return mask
 
     def _init_weight(self):

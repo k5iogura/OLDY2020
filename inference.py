@@ -37,15 +37,17 @@ def open_model(model, modelname):
 
 def run(**kwargs):
     #### RUN CODE ON CUDA IF AVAILABLE
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    print(device)
 
     #### INITIALIZE PRETRAINED EFFICIENTNET
     model = MalignancyDetector(backbone=kwargs['backbonename'], num_classes=2, dropout=0.)
     model = open_model(model, kwargs['weights'])
     model.eval()
     model.to(device)
-    if torch.cuda.is_available():
-        model.half()
+    #if torch.cuda.is_available():
+    #    model.half()
 
     print('initialized model {}, with {} parameters'.format('MalignancyDetector', sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
@@ -70,8 +72,8 @@ def run(**kwargs):
             path = os.path.join(kwargs['data_path'], imagename)
             img = Image.open(path).convert('RGB')
             Timg = transforms(img).unsqueeze(0).to(device)
-            if torch.cuda.is_available():
-                Timg = Timg.half() ## Images are set to half precision (float16) to test the quantization performance.
+            #if torch.cuda.is_available():
+            #    Timg = Timg.half() ## Images are set to half precision (float16) to test the quantization performance.
 
             tstart = time.time()
 
@@ -108,4 +110,5 @@ def run(**kwargs):
 if __name__=='__main__':
     args = get_params()
 
+    print(args.__dict__)
     run(**args.__dict__)
