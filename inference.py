@@ -39,7 +39,7 @@ def run(**kwargs):
     #### RUN CODE ON CUDA IF AVAILABLE
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = torch.device("cpu")
-    print(device)
+    print("Processor\t= {}".format(device))
 
     #### INITIALIZE PRETRAINED EFFICIENTNET
     model = MalignancyDetector(backbone=kwargs['backbonename'], num_classes=2, dropout=0.)
@@ -111,5 +111,5 @@ def run(**kwargs):
 if __name__=='__main__':
     args = get_params()
 
-    print(args.__dict__)
+    [print("ARGS {:15s} = {}".format(k,args.__dict__[k])) for k in args.__dict__]
     run(**args.__dict__)
