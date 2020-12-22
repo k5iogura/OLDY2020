@@ -121,6 +121,7 @@ class EfficientNet(nn.Module):
             for i in block.__dict__['_modules'].keys():print(block.__dict__['_modules'][i])
             sys.stdout.write("{}** {:10d}-{} in={} go={}\t**\n".format(blockMark, idx, block._get_name(), xin_shape, x.shape))
             #set_trace()
+            if outNo==5:break
             pass
 
         return feature_maps
