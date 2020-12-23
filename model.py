@@ -97,13 +97,13 @@ class EfficientNet(nn.Module):
         self.model = model
 
     def forward(self, x):
+        print("\n<<< START EFFICIENTNET >>>")
         # x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
         print("Shape InX = {}".format(x.shape))
         x1= self.model._conv_stem(x)
         print("Shape _conv_stem = {}".format(x1.shape))
         x = self.model._act(self.model._bn0(x1))
         print("Shape _act = {}".format(x.shape))
-        print("\n--- START INFERENCE ---")
         feature_maps = []
         outNo = 1
         for idx, block in enumerate(self.model._blocks):
@@ -114,9 +114,7 @@ class EfficientNet(nn.Module):
             x = block(x, drop_connect_rate=drop_connect_rate)
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
-                outNo += 1
-            else:
-                sys.stdout.write(" "*2)
+        #        outNo += 1
         #    for i in block.__dict__['_modules'].keys():print(block.__dict__['_modules'][i])
         #    sys.stdout.write("{}** {} in={} go={}\t**\n".format(idx, block._get_name(), xin_shape, x.shape))
             if outNo==5:break
@@ -124,6 +122,7 @@ class EfficientNet(nn.Module):
             #set_trace()
             pass
 
+        print(">>> ENDED EFFICIENTNET <<<")
         return feature_maps
     def anlz_block(self, block, no=""):
         block_name = block._get_name()
