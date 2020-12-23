@@ -218,7 +218,7 @@ class EfficientNet(nn.Module):
         blocks_args, global_params = get_model_params(model_name, override_params)
         model = cls(blocks_args, global_params)
         model._change_in_channels(in_channels)
-        [print(ba) for ba in blocks_args]
+        #   [print(ba) for ba in blocks_args]
         return model
 
     @classmethod

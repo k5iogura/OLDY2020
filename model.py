@@ -7,6 +7,7 @@ from pdb import set_trace
 from inspect import getmembers
 
 from backbone import EfficientNet as EffNet
+from dyna import *
 
 def open_model(model, modelname):
     """Open model parameters from checkpoint"""
@@ -49,26 +50,58 @@ class R_ASPP_module(nn.Module):
 
     def forward(self, x, feature):
 
+        print("<<< START R_ASPP >>>")
+        print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
+        print("<<< START ROUTE-1-1 >>>")
+        print("IN {}".format(x.shape))
         x_temp1 = self._act(self.layer1(x))
+        anlz_block(self.layer1,1)
+        anlz_submod(self._act)
+        print("GO {}".format(x_temp1.shape))
+        print("<<< ENDED ROUTE-1-1 >>>\n")
 
+        print("<<< START ROUTE-1-2 >>>")
+        print("IN {}".format(x.shape))
         # Squeeze and excitation module for Segmentation head
         x_temp2 = self.avgpool(x)
         x_temp2 = self.layer2(x_temp2)
 
         x_temp2_weight = self.hsigmoid(x_temp2) # sigmoid function is replaced with the Hardsigmoid function.
         x_temp2_weight = F.interpolate(x_temp2_weight, x_temp1.size()[2:], mode='bilinear', align_corners=False)
+        [anlz_submod(s) for s in (self.avgpool, self.layer2, self.hsigmoid, F.interpolate)]
+        print("GO {}".format(x_temp2_weight.shape))
+        print("<<< ENDED ROUTE-1-2 >>>\n")
 
+        print("<<< START ROUTE-1-AGRIGATE >>>")
+        print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
         out = x_temp2_weight * x_temp1
+        print("PRODUCT-GO {}".format(out.shape))
         out = F.interpolate(out, feature.size()[2:], mode='bilinear', align_corners=False)
 
         # Compress feature maps to number of classes
         out = self.out_conv1(out)
-        feature = self.out_conv2(feature)
+        #feature = self.out_conv2(feature)
+        [anlz_submod(s) for s in (F.interpolate, self.out_conv1)]
+        print("GO {}".format(out.shape))
+        print("<<< ENDED ROUTE-1-AGRIGATE >>>\n")
 
+        print("<<< START ROUTE-2 >>>")
+        print("IN {}".format(feature.shape))
+        feature = self.out_conv2(feature)
+        anlz_submod(self.out_conv2)
+        print("GO {}".format(feature.shape))
+        print("<<< ENDED ROUTE-2 >>>\n")
+
+        print("<<< START ROUTE-AGRIGATE >>>")
         # Small modification from the original paper, was:
         # out = out + feature
+        print("IN-1 {} IN-2 {}".format(out.shape, feature.shape))
         out = torch.cat((out, feature), dim=1)
-
+        anlz_submod(torch.cat)
+        print("GO {}".format(out.shape))
+        print("<<< ENDED ROUTE-AGRIGATE >>>\n")
+        print("GO {}".format(out.shape))
+        print("<<< ENDED R_ASPP >>>\n")
         return out
 
     def _init_weight(self):
@@ -97,77 +130,25 @@ class EfficientNet(nn.Module):
         self.model = model
 
     def forward(self, x):
-        print("\n<<< START EFFICIENTNET >>>")
-        # x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
-        print("Shape InX = {}".format(x.shape))
-        x1= self.model._conv_stem(x)
-        print("Shape _conv_stem = {}".format(x1.shape))
-        x = self.model._act(self.model._bn0(x1))
-        print("Shape _act = {}".format(x.shape))
+        print("<<< START EFFICIENTNET >>>")
+        print("IN {}".format(x.shape))
+        x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
+        [anlz_submod(s) for s in (self.model._conv_stem, self.model._bn0,self.model._act)]
         feature_maps = []
-        outNo = 1
         for idx, block in enumerate(self.model._blocks):
             drop_connect_rate = self.model._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
             xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
+            anlz_block(block,idx)
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
-        #        outNo += 1
-        #    for i in block.__dict__['_modules'].keys():print(block.__dict__['_modules'][i])
-        #    sys.stdout.write("{}** {} in={} go={}\t**\n".format(idx, block._get_name(), xin_shape, x.shape))
-            if outNo==5:break
-            self.anlz_block(block,idx)
-            #set_trace()
-            pass
+                if len(feature_maps)==4:break
 
-        print(">>> ENDED EFFICIENTNET <<<")
+        [sys.stdout.write("GO-{} {} ".format(no, fm.shape)) for no, fm in enumerate(feature_maps)]
+        print("\n>>> ENDED EFFICIENTNET <<<\n")
         return feature_maps
-    def anlz_block(self, block, no=""):
-        block_name = block._get_name()
-        no = "" if no == "" else "-"+str(no)
-        print("{}{}".format(block_name,no))
-        modules = block.__dict__['_modules']
-        for k in modules.keys():
-            class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
-            submod = modules[k]
-            name = submod._get_name()
-            try:
-                class_name = submod.__class__
-            except:
-                pass
-            try:
-                in_channels = submod.in_channels
-            except:
-                pass
-            try:
-                out_channels = submod.out_channels
-            except:
-                pass
-            try:
-                kernel_size = submod.kernel_size
-            except:
-                pass
-            try:
-                stride = submod.stride
-            except:
-                pass
-            try:
-                padding = submod.static_padding.padding
-            except:
-                try:
-                    padding = submod.padding
-                except:
-                    pass
-            try:
-                eps = submod.eps
-            except:
-                pass
-            pass
-            print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
-        #    set_trace()
-        pass
 
 class MalignancyDetector(nn.Module):
     #### INITIALIZATION OF THE WHOLE MODEL EFFICIENTNET-LITE + R-ASSP-LITE
@@ -197,7 +178,7 @@ class MalignancyDetector(nn.Module):
         self._init_weight()
 
     def forward(self, x):
-        print("Shape x    = {}".format(x.shape))
+    #    print("Shape x    = {}".format(x.shape))
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)
         outR= self._act(self._conv_head(c4))
@@ -208,9 +189,9 @@ class MalignancyDetector(nn.Module):
 
         mask = F.interpolate(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
 
-        print("Shape B._1 = {} c2 = {} _3 = {} c4 = {}".format(_1.shape, c2.shape, _3.shape, c4.shape))
-        print("Shape outR = {} out2 = {} out3 = {}".format(outR.shape, out2.shape, out3.shape))
-        print("Shape Mask = {}".format(mask.shape))
+    #    print("Shape B._1 = {} c2 = {} _3 = {} c4 = {}".format(_1.shape, c2.shape, _3.shape, c4.shape))
+    #    print("Shape outR = {} out2 = {} out3 = {}".format(outR.shape, out2.shape, out3.shape))
+    #    print("Shape Mask = {}".format(mask.shape))
         return mask
 
     def _init_weight(self):
