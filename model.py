@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 from pdb import set_trace
+from inspect import getmembers
 
 from backbone import EfficientNet as EffNet
 
@@ -111,20 +112,63 @@ class EfficientNet(nn.Module):
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
             xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
-            blockMark = '  '
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
-                blockMark = "C{:1d}".format(outNo)
                 outNo += 1
             else:
                 sys.stdout.write(" "*2)
-            for i in block.__dict__['_modules'].keys():print(block.__dict__['_modules'][i])
-            sys.stdout.write("{}** {:10d}-{} in={} go={}\t**\n".format(blockMark, idx, block._get_name(), xin_shape, x.shape))
-            #set_trace()
+        #    for i in block.__dict__['_modules'].keys():print(block.__dict__['_modules'][i])
+        #    sys.stdout.write("{}** {} in={} go={}\t**\n".format(idx, block._get_name(), xin_shape, x.shape))
             if outNo==5:break
+            self.anlz_block(block,idx)
+            #set_trace()
             pass
 
         return feature_maps
+    def anlz_block(self, block, no=""):
+        block_name = block._get_name()
+        no = "" if no == "" else "-"+str(no)
+        print("{}{}".format(block_name,no))
+        modules = block.__dict__['_modules']
+        for k in modules.keys():
+            class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
+            submod = modules[k]
+            name = submod._get_name()
+            try:
+                class_name = submod.__class__
+            except:
+                pass
+            try:
+                in_channels = submod.in_channels
+            except:
+                pass
+            try:
+                out_channels = submod.out_channels
+            except:
+                pass
+            try:
+                kernel_size = submod.kernel_size
+            except:
+                pass
+            try:
+                stride = submod.stride
+            except:
+                pass
+            try:
+                padding = submod.static_padding.padding
+            except:
+                try:
+                    padding = submod.padding
+                except:
+                    pass
+            try:
+                eps = submod.eps
+            except:
+                pass
+            pass
+            print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
+        #    set_trace()
+        pass
 
 class MalignancyDetector(nn.Module):
     #### INITIALIZATION OF THE WHOLE MODEL EFFICIENTNET-LITE + R-ASSP-LITE
