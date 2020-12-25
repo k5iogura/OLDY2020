@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from pdb import set_trace
 from inspect import getmembers
 
-def anlz_submod(submod):
+def anlz_submod(submod, out=None):
     class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
     try:
         name = submod._get_name()
@@ -50,7 +50,7 @@ def anlz_submod(submod):
         print("{}".format(submod))
     return (name, in_channels, out_channels, kernel_size, stride ,padding, eps)
 
-def anlz_block(block, no=""):
+def anlz_block(block, out=None, no=""):
     block_name = block._get_name()
     no = "" if no == "" else "-"+str(no)
     print("{}{}".format(block_name,no))

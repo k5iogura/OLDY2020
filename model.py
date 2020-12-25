@@ -55,7 +55,7 @@ class R_ASPP_module(nn.Module):
         print("<<< START ROUTE-1-1 >>>")
         print("IN {}".format(x.shape))
         x_temp1 = self._act(self.layer1(x))
-        anlz_block(self.layer1,1)
+        anlz_block(self.layer1, no=1)
         anlz_submod(self._act)
         print("GO {}".format(x_temp1.shape))
         print("<<< ENDED ROUTE-1-1 >>>\n")
@@ -141,7 +141,7 @@ class EfficientNet(nn.Module):
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
             xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
-            anlz_block(block,idx)
+            anlz_block(block, no=idx)
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
                 if len(feature_maps)==4:break
