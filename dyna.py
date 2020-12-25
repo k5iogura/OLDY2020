@@ -6,6 +6,20 @@ import torch.nn.functional as F
 from pdb import set_trace
 from inspect import getmembers
 
+def hook(m, i, o):
+    sys.stdout.write("*********** ")
+    #anlz_block(m)
+#    print(m._get_name(),i[0].shape,o[0].shape)
+    pass
+
+def set_hook(net):
+    for name, layer in net._modules.items():
+        if isinstance(layer, nn.Sequential):
+            pass
+        else:
+            layer.register_forward_hook(hook)
+            set_hook(layer)
+
 def anlz_submod(submod, out=None):
     class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
     try:
