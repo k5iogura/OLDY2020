@@ -85,6 +85,9 @@ class MBConvBlock(nn.Module):
             if drop_connect_rate:
                 x = drop_connect(x, p=drop_connect_rate, training=self.training)
             x = x + inputs  # skip connection
+            print('skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
+        else:
+            print('no skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
 
         return x
 
@@ -218,7 +221,7 @@ class EfficientNet(nn.Module):
         blocks_args, global_params = get_model_params(model_name, override_params)
         model = cls(blocks_args, global_params)
         model._change_in_channels(in_channels)
-        #   [print(ba) for ba in blocks_args]
+        [print(ba) for ba in blocks_args]
         return model
 
     @classmethod

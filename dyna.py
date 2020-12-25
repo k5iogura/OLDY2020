@@ -44,7 +44,10 @@ def anlz_submod(submod):
     except:
         pass
     name = submod.__name__ if 'function' in str(type(submod)) else name
-    print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
+    if in_channels or 'function' in str(type(submod)):
+        print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
+    else:
+        print("{}".format(submod))
     return (name, in_channels, out_channels, kernel_size, stride ,padding, eps)
 
 def anlz_block(block, no=""):
@@ -54,6 +57,7 @@ def anlz_block(block, no=""):
     modules = block.__dict__['_modules']
     for k in modules.keys():
         submod = modules[k]
+        #print("{}".format(submod))  #
         sys.stdout.write(' ')
         (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(submod)
     pass

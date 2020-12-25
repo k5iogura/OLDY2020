@@ -182,12 +182,16 @@ class MalignancyDetector(nn.Module):
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)
         outR= self._act(self._conv_head(c4))
+        anlz_block(self._conv_head)
 
         out2= self.r_aspp(outR, c2)
 
         out3= self.last_conv(out2)
 
         mask = F.interpolate(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
+
+        anlz_block(self.last_conv)
+        anlz_submod(F.interpolate)
 
     #    print("Shape B._1 = {} c2 = {} _3 = {} c4 = {}".format(_1.shape, c2.shape, _3.shape, c4.shape))
     #    print("Shape outR = {} out2 = {} out3 = {}".format(outR.shape, out2.shape, out3.shape))
