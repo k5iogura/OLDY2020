@@ -197,7 +197,7 @@ class EfficientNet(nn.Module):
         x = x.view(bs, -1)
         x = self._dropout(x)
         x = self._fc(x)
-
+        assert False,"Assume : dont use backbone.EfficientNet.forward()"
         return x
 
     @classmethod
