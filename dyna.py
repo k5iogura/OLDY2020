@@ -38,6 +38,26 @@ def outComment(comstr,in1_tensor=None, in2_tensor=None):
             comstr += in2_shape
     outKNMSFiFo([None,None,None,None,None,None,None,None,comstr])
 
+def outCommentEnd(comstr,go1_tensor=None, go2_tensor=None, go3_tensor=None, go4_tensor=None):
+    go1_shape = go2_shape = go3_shape = go4_shape = None
+    if go1_tensor is not None: go1_shape = str([i for i in go1_tensor.shape])
+    if go2_tensor is not None: go2_shape = str([i for i in go2_tensor.shape])
+    if go3_tensor is not None: go3_shape = str([i for i in go3_tensor.shape])
+    if go4_tensor is not None: go4_shape = str([i for i in go4_tensor.shape])
+    if go1_tensor is not None:
+        comstr += "GO " if go2_tensor is None else "GO1 "
+        comstr += go1_shape
+        if go2_tensor is not None:
+            comstr += " GO2 "
+            comstr += go2_shape
+            if go3_tensor is not None:
+                comstr += " GO3 "
+                comstr += go3_shape
+                if go4_tensor is not None:
+                    comstr += " GO4 "
+                    comstr += go4_shape
+    outKNMSFiFo([None,None,None,None,None,None,None,None,comstr])
+
 class com():
     def __init__(self):
         self.comment = []

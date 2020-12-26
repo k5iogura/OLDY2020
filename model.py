@@ -53,22 +53,13 @@ class R_ASPP_module(nn.Module):
     def forward(self, x, feature):
 
         dyna.comment.push('R_ASPP')
-    #    print("<<< START R_ASPP >>>")
         outComment("<<< START R_ASPP >>>",x,feature)
-    #    print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
-    #    print("<<< START ROUTE-1-1 >>>")
         outComment("<<< START ROUTE-1-1 >>> ",x)
-    #    print("IN {}".format(x.shape))
         set_hook(self.layer1)
         x_temp1 = self._act(self.layer1(x))
-    #    anlz_block(self.layer1, no=1)
-    #    anlz_submod(self._act)
-    #    print("GO {}".format(x_temp1.shape))
-        print("<<< ENDED ROUTE-1-1 >>>\n")
+        outCommentEnd("<<< ENDED ROUTE-1-1 >>> ",x_temp1)
 
-    #    print("<<< START ROUTE-1-2 >>>")
         outComment("<<< START ROUTE-1-2 >>> ",x)
-    #    print("IN {}".format(x.shape))
         # Squeeze and excitation module for Segmentation head
         self.avgpool.register_forward_hook(hook)
         self.layer2.register_forward_hook(hook)
@@ -80,53 +71,35 @@ class R_ASPP_module(nn.Module):
         anlz = anlz_interpolate(x_temp2_weight)
         x_temp2_weight = F.interpolate(x_temp2_weight, x_temp1.size()[2:], mode='bilinear', align_corners=False)
         anlz.info(x_temp2_weight, x_temp1.size()[2:], mode='bilinear', align_corners=False)
-    #    [anlz_submod(s) for s in (self.avgpool, self.layer2, self.hsigmoid, F.interpolate)]
-        print("GO {}".format(x_temp2_weight.shape))
-        print("<<< ENDED ROUTE-1-2 >>>\n")
+        outCommentEnd("<<< ENDED ROUTE-1-2 >>> ",x_temp2_weight)
 
-    #    print("<<< START ROUTE-1-AGRIGATE >>>")
         outComment("<<< START ROUTE-1-AGRIGATE >>> ",x_temp2_weight,x_temp1)
-    #    print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
         anlz=anlz_product(x_temp2_weight)
         out = x_temp2_weight * x_temp1
         anlz.info(out, x_temp1)
-    #    print("PRODUCT-GO {}".format(out.shape))
-        print(out.shape)
         anlz = anlz_interpolate(out)
         out = F.interpolate(out, feature.size()[2:], mode='bilinear', align_corners=False)
         anlz.info(out, feature.size()[2:], mode='bilinear', align_corners=False)
-        print(out.shape)
 
         # Compress feature maps to number of classes
         self.out_conv1.register_forward_hook(hook)
         out = self.out_conv1(out)
         #feature = self.out_conv2(feature)
-    #    [anlz_submod(s) for s in (F.interpolate, self.out_conv1)]
-        print("GO {}".format(out.shape))
-        print("<<< ENDED ROUTE-1-AGRIGATE >>>\n")
+        outCommentEnd("<<< ENDED ROUTE-1-AGRIGATE >>> ",out)
 
-    #    print("<<< START ROUTE-2 >>>")
         outComment("<<< START ROUTE-2 >>> FEATURE_MAP ",feature)
-    #    print("IN {}".format(feature.shape))
         self.out_conv2.register_forward_hook(hook)
         feature = self.out_conv2(feature)
-    #    anlz_submod(self.out_conv2)
-        print("GO {}".format(feature.shape))
-        print("<<< ENDED ROUTE-2 >>>\n")
+        outCommentEnd("<<< ENDED ROUTE-2 >>> ",feature)
 
-    #    print("<<< START ROUTE-AGRIGATE >>>")
         outComment("<<< START ROUTE-AGRIGATE >>> ",out,feature)
         # Small modification from the original paper, was:
         # out = out + feature
-    #    print("IN-1 {} IN-2 {}".format(out.shape, feature.shape))
         anlz = anlz_cat(out, feature)
         out = torch.cat((out, feature), dim=1)
         anlz.info(out)
-        #anlz_submod(torch.cat)
-        print("GO {}".format(out.shape))
-        print("<<< ENDED ROUTE-AGRIGATE >>>\n")
-        print("GO {}".format(out.shape))
-        print("<<< ENDED R_ASPP >>>\n")
+        outCommentEnd("<<< ENDED ROUTE-AGRIGATE >>> ",out)
+        outCommentEnd("<<< ENDED R_ASPP >>> ",out)
         dyna.comment.pop()
         return out
 
@@ -157,9 +130,7 @@ class EfficientNet(nn.Module):
 
     def forward(self, x):
         dyna.comment.push('EFFICIENTNET')
-    #    print("<<< START EFFICIENTNET >>>")
         outComment("<<< START EFFICIENTNET >>>",x)
-    #    print("IN {}".format(x.shape))
         [m.register_forward_hook(hook) for m in (self.model._conv_stem, self.model._bn0, self.model._act)]
         x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
         feature_maps = []
@@ -170,14 +141,12 @@ class EfficientNet(nn.Module):
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
             xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
-    #        anlz_block(block, no=idx)
             dyna.comment.pop()
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
                 if len(feature_maps)==4:break
 
-        [sys.stdout.write("GO-{} {} ".format(no, fm.shape)) for no, fm in enumerate(feature_maps)]
-        print("\n>>> ENDED EFFICIENTNET <<<\n")
+        outCommentEnd(">>> ENDED EFFICIENTNET <<< ",*feature_maps)
         dyna.comment.pop()
         return feature_maps
 
@@ -211,7 +180,6 @@ class MalignancyDetector(nn.Module):
     def forward(self, x):
         dyna.comment.push("MAGLINANCYNET")
         outComment("<<< START MAGLINANCYNET >>>",x)
-    #    print("Shape x    = {}".format(x.shape))
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)
 
