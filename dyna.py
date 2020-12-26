@@ -185,7 +185,7 @@ class anlz_interpolate():
 
     def info(self, gotensor, size=None, mode=None, align_corners=False):
         gotensor_shape = gotensor.shape # N,C,H,W
-        K =size[-1] if size is not None and (isinstance(size,tuple) or isinstance(size,list)) else size
+        K =None
         N =self.intensor_shape[1] if self.intensor_shape is not None else None
         M =     gotensor_shape[1] if      gotensor_shape is not None else None
         S=None
