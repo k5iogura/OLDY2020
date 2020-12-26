@@ -1,4 +1,6 @@
 Unit,K,N,M,S,Fi,Fo,P,Comment
+,,,,,,,,"<<< START MAGLINANCYNET >>>IN [1, 3, 256, 256]"
+,,,,,,,,"<<< START EFFICIENTNET >>>IN [1, 3, 256, 256]"
 Conv2dStaticSamePadding,3,3,32,2,256,128,"(0, 1, 0, 1)",EFFICIENTNET.MAGLINANCYNET.
 BatchNorm2d,,32,32,,128,128,,EFFICIENTNET.MAGLINANCYNET.
 ReLU6,,32,32,,128,128,,EFFICIENTNET.MAGLINANCYNET.
@@ -144,21 +146,22 @@ BatchNorm2d,,192,192,,8,8,,MBConvBlock-16.EFFICIENTNET.MAGLINANCYNET.
 Conv2d,1,192,96,1,8,8,"(0, 0)",MAGLINANCYNET.
 BatchNorm2d,,96,96,,8,8,,MAGLINANCYNET.
 ReLU6,,96,96,,8,8,,MAGLINANCYNET.
-,,,,,,,,<<< START ROUTE-1-1 >>>
+,,,,,,,,"<<< START R_ASPP >>>IN1 [1, 96, 8, 8] IN2 [1, 40, 32, 32]"
+,,,,,,,,"<<< START ROUTE-1-1 >>> IN [1, 96, 8, 8]"
 Conv2d,1,96,128,1,8,8,"(0, 0)",R_ASPP.MAGLINANCYNET.
 BatchNorm2d,,128,128,,8,8,,R_ASPP.MAGLINANCYNET.
-,,,,,,,,<<< START ROUTE-1-2 >>>
+,,,,,,,,"<<< START ROUTE-1-2 >>> IN [1, 96, 8, 8]"
 AdaptiveAvgPool2d,,96,96,,8,1,,R_ASPP.MAGLINANCYNET.
 Conv2d,1,96,128,1,1,1,"(0, 0)",R_ASPP.MAGLINANCYNET.
 Hardsigmoid,,128,128,,1,1,,R_ASPP.MAGLINANCYNET.
 F.interpolate,8,128,128,,1,8,,"R_ASPP.MAGLINANCYNET. size=[8, 8] mode=bilinear align_corners=False"
-,,,,,,,,<<< START ROUTE-1-AGRIGATE >>>
+,,,,,,,,"<<< START ROUTE-1-AGRIGATE >>> IN1 [1, 128, 8, 8] IN2 [1, 128, 8, 8]"
 (ProductOperator),,128,128,,8,8,,R_ASPP.MAGLINANCYNET.NUMPY PRODUCT IN1 AND IN2
 F.interpolate,32,128,128,,8,32,,"R_ASPP.MAGLINANCYNET. size=[32, 32] mode=bilinear align_corners=False"
 Conv2d,1,128,19,1,32,32,"(0, 0)",R_ASPP.MAGLINANCYNET.
-,,,,,,,,<<< START ROUTE-2 >>>
+,,,,,,,,"<<< START ROUTE-2 >>> FEATURE_MAP IN [1, 40, 32, 32]"
 Conv2d,1,40,19,1,32,32,"(0, 0)",R_ASPP.MAGLINANCYNET.
-,,,,,,,,<<< START ROUTE-AGRIGATE >>>
+,,,,,,,,"<<< START ROUTE-AGRIGATE >>> IN1 [1, 19, 32, 32] IN2 [1, 19, 32, 32]"
 torch.cat,,19,38,,32,32,,R_ASPP.MAGLINANCYNET.
 Dropout2d,,38,38,,32,32,,MAGLINANCYNET.
 Conv2d,1,38,2,1,32,32,"(0, 0)",MAGLINANCYNET.
