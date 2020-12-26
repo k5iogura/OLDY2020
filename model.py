@@ -8,6 +8,7 @@ from pdb import set_trace
 from inspect import getmembers
 
 from backbone import EfficientNet as EffNet
+import dyna
 from dyna import *
 
 def open_model(model, modelname):
@@ -51,6 +52,7 @@ class R_ASPP_module(nn.Module):
 
     def forward(self, x, feature):
 
+        dyna.comment.push('R_ASPP')
         print("<<< START R_ASPP >>>")
         print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
         print("<<< START ROUTE-1-1 >>>")
@@ -117,6 +119,7 @@ class R_ASPP_module(nn.Module):
         print("<<< ENDED ROUTE-AGRIGATE >>>\n")
         print("GO {}".format(out.shape))
         print("<<< ENDED R_ASPP >>>\n")
+        dyna.comment.pop()
         return out
 
     def _init_weight(self):
@@ -145,25 +148,28 @@ class EfficientNet(nn.Module):
         self.model = model
 
     def forward(self, x):
+        dyna.comment.push('EFFICIENTNET')
         print("<<< START EFFICIENTNET >>>")
         print("IN {}".format(x.shape))
         [m.register_forward_hook(hook) for m in (self.model._conv_stem, self.model._bn0, self.model._act)]
         x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
-    #    [anlz_submod(s) for s in (self.model._conv_stem, self.model._bn0, self.model._act)]
         feature_maps = []
         for idx, block in enumerate(self.model._blocks):
+            dyna.comment.push("MBConvBlock-{}".format(idx))
             drop_connect_rate = self.model._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
             xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
     #        anlz_block(block, no=idx)
+            dyna.comment.pop()
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
                 if len(feature_maps)==4:break
 
         [sys.stdout.write("GO-{} {} ".format(no, fm.shape)) for no, fm in enumerate(feature_maps)]
         print("\n>>> ENDED EFFICIENTNET <<<\n")
+        dyna.comment.pop()
         return feature_maps
 
 class MalignancyDetector(nn.Module):
@@ -194,6 +200,7 @@ class MalignancyDetector(nn.Module):
         self._init_weight()
 
     def forward(self, x):
+        dyna.comment.push("MAGLINANCYNET")
     #    print("Shape x    = {}".format(x.shape))
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)
@@ -201,7 +208,6 @@ class MalignancyDetector(nn.Module):
         set_hook(self._conv_head)
         self._act.register_forward_hook(hook)
         outR= self._act(self._conv_head(c4))
-    #    anlz_block(self._conv_head)
 
         out2= self.r_aspp(outR, c2)
 
@@ -211,6 +217,7 @@ class MalignancyDetector(nn.Module):
         anlz = anlz_interpolate(out3)
         mask = F.interpolate(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
         anlz.info(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
+        dyna.comment.pop()
 
         return mask
 

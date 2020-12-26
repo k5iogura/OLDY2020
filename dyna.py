@@ -13,19 +13,28 @@ class com():
         self.comment.append(c)
     def pop(self):
         return self.comment.pop()
-    def str(self):
+    def str(self,append=""):
         rv=''
         for c in reversed(self.comment):
             rv+=str(c)+'.'
-        rv='"'+rv+'"'
+        rv='"'+rv+str(append)+'"'
         return str(rv)
 comment = com()
 
+# KNMSFiFo
 def hook(m, i, o):
     (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(m)
     if in_channels  is None and len(i[0].shape) >= 2: in_channels  = i[0].shape[1]
     if out_channels is None and len(o.shape)    >= 2: out_channels = o.shape[1]
-    print(" ** {} {} {} {} {} {} {} {} {}".format(name,i[0].shape[-1],o.shape[-1],in_channels,out_channels,kernel_size,stride,padding,comment.str()))
+    #print(" ** {} {} {} {} {} {} {} {} {}".format(name,i[0].shape[-1],o.shape[-1],in_channels,out_channels,kernel_size,stride,padding,comment.str()))
+    K=kernel_size[-1] if isinstance(kernel_size,tuple) or isinstance(kernel_size,list) else kernel_size
+    N=in_channels
+    M=out_channels
+    Fi=i[0].shape[-1]
+    Fo=o.shape[-1]
+    S=stride[-1] if isinstance(stride,tuple) or isinstance(stride,list) else stride
+    P=padding
+    print(" ** {} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comment.str()))
 
 def set_hook(net):
     assert isinstance(net, nn.Sequential),"dont use this others of nn.Sequential {}".format(type(net))
@@ -92,19 +101,36 @@ def anlz_block_(block, out=None, no=""):
         (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(submod)
     pass
 
+#KNMSFiFo
 class anlz_interpolate():
     def __init__(self, intensor=None):
-        if intensor is not None:
-            self.intensor_shape = intensor.shape
+        intensor_shape = None
+        if intensor is not None: self.intensor_shape = intensor.shape
 
     def info(self, gotensor, size=None, mode=None, align_corners=False):
-        print(" *** interpolate {} {} {} {} {}".format(gotensor.shape, size, mode, align_corners,comment.str()))
+        gotensor_shape = gotensor.shape # N,C,H,W
+        K =size[-1] if size is not None and (isinstance(size,tuple) or isinstance(size,list)) else size
+        N =self.intensor_shape[1] if self.intensor_shape is not None else None
+        M =     gotensor_shape[1] if      gotensor_shape is not None else None
+        S=None
+        Fi=self.intensor_shape[-1] if self.intensor_shape is not None else None
+        Fo=     gotensor_shape[-1] if      gotensor_shape is not None else None
+        size = [i for i in size] if size is not None else size
+        comstr=comment.str(append=" size="+str(size)+" mode="+mode+" align_corners="+str(align_corners))
+        print(" *** interpolate {} {} {} {} {} {} {}".format(K,N,M,S,Fi,Fo,comstr))
 
 class anlz_cat():
     def __init__(self, intensor1, intensor2):
         self.intensor1_shape = intensor1.shape
         self.intensor2_shape = intensor2.shape
+        assert self.intensor1_shape == self.intensor2_shape
 
     def info(self, gotensor):
-        print(" *** torch.cat {} {} {} {}".format(self.intensor1_shape, self.intensor2_shape, gotensor.shape,comment.str()))
+        K=None
+        N=self.intensor1_shape[1]
+        M=     gotensor.shape[1]
+        S=None
+        Fi=self.intensor1_shape[-1]
+        Fo=     gotensor.shape[-1]
+        print(" *** torch.cat {} {} {} {} {} {} {}".format(K,N,M,S,Fi,Fo,comment.str()))
 
