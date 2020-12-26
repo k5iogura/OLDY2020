@@ -6,15 +6,26 @@ import torch.nn.functional as F
 from pdb import set_trace
 from inspect import getmembers
 
+class com():
+    def __init__(self):
+        self.comment = []
+    def push(self,c):
+        self.comment.append(c)
+    def pop(self):
+        return self.comment.pop()
+    def str(self):
+        rv=''
+        for c in reversed(self.comment):
+            rv+=str(c)+'.'
+        rv='"'+rv+'"'
+        return str(rv)
+comment = com()
+
 def hook(m, i, o):
     (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(m)
     if in_channels  is None and len(i[0].shape) >= 2: in_channels  = i[0].shape[1]
     if out_channels is None and len(o.shape)    >= 2: out_channels = o.shape[1]
-    print(" ** {} {} {} {} {} {} {} {}".format(name,i[0].shape[-1],o.shape[-1],in_channels,out_channels,kernel_size,stride,padding))
-#    set_trace()
-    #anlz_block(m)
-#    print(m._get_name(),i[0].shape,o[0].shape)
-    pass
+    print(" ** {} {} {} {} {} {} {} {} {}".format(name,i[0].shape[-1],o.shape[-1],in_channels,out_channels,kernel_size,stride,padding,comment.str()))
 
 def set_hook(net):
     assert isinstance(net, nn.Sequential),"dont use this others of nn.Sequential {}".format(type(net))
@@ -87,7 +98,7 @@ class anlz_interpolate():
             self.intensor_shape = intensor.shape
 
     def info(self, gotensor, size=None, mode=None, align_corners=False):
-        print(" *** interpolate {} {} {} {}".format(gotensor.shape, size, mode, align_corners))
+        print(" *** interpolate {} {} {} {} {}".format(gotensor.shape, size, mode, align_corners,comment.str()))
 
 class anlz_cat():
     def __init__(self, intensor1, intensor2):
@@ -95,5 +106,5 @@ class anlz_cat():
         self.intensor2_shape = intensor2.shape
 
     def info(self, gotensor):
-        print(" *** torch.cat {} {} {}".format(self.intensor1_shape, self.intensor2_shape, gotensor.shape))
+        print(" *** torch.cat {} {} {} {}".format(self.intensor1_shape, self.intensor2_shape, gotensor.shape,comment.str()))
 
