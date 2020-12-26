@@ -3,6 +3,7 @@ import os,sys
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+import torchfunc
 from pdb import set_trace
 from inspect import getmembers
 
@@ -54,21 +55,27 @@ class R_ASPP_module(nn.Module):
         print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
         print("<<< START ROUTE-1-1 >>>")
         print("IN {}".format(x.shape))
+        set_hook(self.layer1)
         x_temp1 = self._act(self.layer1(x))
-        anlz_block(self.layer1, no=1)
-        anlz_submod(self._act)
+    #    anlz_block(self.layer1, no=1)
+    #    anlz_submod(self._act)
         print("GO {}".format(x_temp1.shape))
         print("<<< ENDED ROUTE-1-1 >>>\n")
 
         print("<<< START ROUTE-1-2 >>>")
         print("IN {}".format(x.shape))
         # Squeeze and excitation module for Segmentation head
+        self.avgpool.register_forward_hook(hook)
+        self.layer2.register_forward_hook(hook)
         x_temp2 = self.avgpool(x)
         x_temp2 = self.layer2(x_temp2)
 
+        self.hsigmoid.register_forward_hook(hook)
         x_temp2_weight = self.hsigmoid(x_temp2) # sigmoid function is replaced with the Hardsigmoid function.
+        anlz = anlz_interpolate(x_temp2_weight)
         x_temp2_weight = F.interpolate(x_temp2_weight, x_temp1.size()[2:], mode='bilinear', align_corners=False)
-        [anlz_submod(s) for s in (self.avgpool, self.layer2, self.hsigmoid, F.interpolate)]
+        anlz.info(x_temp2_weight, x_temp1.size()[2:], mode='bilinear', align_corners=False)
+    #    [anlz_submod(s) for s in (self.avgpool, self.layer2, self.hsigmoid, F.interpolate)]
         print("GO {}".format(x_temp2_weight.shape))
         print("<<< ENDED ROUTE-1-2 >>>\n")
 
@@ -76,19 +83,25 @@ class R_ASPP_module(nn.Module):
         print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
         out = x_temp2_weight * x_temp1
         print("PRODUCT-GO {}".format(out.shape))
+        print(out.shape)
+        anlz = anlz_interpolate(out)
         out = F.interpolate(out, feature.size()[2:], mode='bilinear', align_corners=False)
+        anlz.info(out, feature.size()[2:], mode='bilinear', align_corners=False)
+        print(out.shape)
 
         # Compress feature maps to number of classes
+        self.out_conv1.register_forward_hook(hook)
         out = self.out_conv1(out)
         #feature = self.out_conv2(feature)
-        [anlz_submod(s) for s in (F.interpolate, self.out_conv1)]
+    #    [anlz_submod(s) for s in (F.interpolate, self.out_conv1)]
         print("GO {}".format(out.shape))
         print("<<< ENDED ROUTE-1-AGRIGATE >>>\n")
 
         print("<<< START ROUTE-2 >>>")
         print("IN {}".format(feature.shape))
+        self.out_conv2.register_forward_hook(hook)
         feature = self.out_conv2(feature)
-        anlz_submod(self.out_conv2)
+    #    anlz_submod(self.out_conv2)
         print("GO {}".format(feature.shape))
         print("<<< ENDED ROUTE-2 >>>\n")
 
@@ -96,8 +109,10 @@ class R_ASPP_module(nn.Module):
         # Small modification from the original paper, was:
         # out = out + feature
         print("IN-1 {} IN-2 {}".format(out.shape, feature.shape))
+        anlz = anlz_cat(out, feature)
         out = torch.cat((out, feature), dim=1)
-        anlz_submod(torch.cat)
+        anlz.info(out)
+        #anlz_submod(torch.cat)
         print("GO {}".format(out.shape))
         print("<<< ENDED ROUTE-AGRIGATE >>>\n")
         print("GO {}".format(out.shape))
@@ -132,8 +147,9 @@ class EfficientNet(nn.Module):
     def forward(self, x):
         print("<<< START EFFICIENTNET >>>")
         print("IN {}".format(x.shape))
+        [m.register_forward_hook(hook) for m in (self.model._conv_stem, self.model._bn0, self.model._act)]
         x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
-        [anlz_submod(s) for s in (self.model._conv_stem, self.model._bn0,self.model._act)]
+    #    [anlz_submod(s) for s in (self.model._conv_stem, self.model._bn0, self.model._act)]
         feature_maps = []
         for idx, block in enumerate(self.model._blocks):
             drop_connect_rate = self.model._global_params.drop_connect_rate
@@ -141,7 +157,7 @@ class EfficientNet(nn.Module):
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
             xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
-            anlz_block(block, no=idx)
+    #        anlz_block(block, no=idx)
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
                 if len(feature_maps)==4:break
@@ -181,21 +197,21 @@ class MalignancyDetector(nn.Module):
     #    print("Shape x    = {}".format(x.shape))
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)
+
+        set_hook(self._conv_head)
+        self._act.register_forward_hook(hook)
         outR= self._act(self._conv_head(c4))
-        anlz_block(self._conv_head)
+    #    anlz_block(self._conv_head)
 
         out2= self.r_aspp(outR, c2)
 
+        set_hook(self.last_conv)
         out3= self.last_conv(out2)
 
+        anlz = anlz_interpolate(out3)
         mask = F.interpolate(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
+        anlz.info(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
 
-        anlz_block(self.last_conv)
-        anlz_submod(F.interpolate)
-
-    #    print("Shape B._1 = {} c2 = {} _3 = {} c4 = {}".format(_1.shape, c2.shape, _3.shape, c4.shape))
-    #    print("Shape outR = {} out2 = {} out3 = {}".format(outR.shape, out2.shape, out3.shape))
-    #    print("Shape Mask = {}".format(mask.shape))
         return mask
 
     def _init_weight(self):

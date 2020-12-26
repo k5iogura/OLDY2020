@@ -1,5 +1,6 @@
 from torch import nn
 from pdb import set_trace
+from dyna import *
 
 from backbone_utils import (
     round_filters,
@@ -63,17 +64,21 @@ class MBConvBlock(nn.Module):
             Output of this block after processing.
         """
 
+
         # Expansion and Depthwise Convolution
         x = inputs
         if self._block_args.expand_ratio != 1:
+            [m.register_forward_hook(hook) for m in (self._expand_conv, self._bn0, self._act)]
             x = self._expand_conv(inputs)
             x = self._bn0(x)
             x = self._act(x)
 
+        [m.register_forward_hook(hook) for m in (self._depthwise_conv, self._bn1)]
         x = self._depthwise_conv(x)
         x = self._bn1(x)
         x = self._act(x)
 
+        [m.register_forward_hook(hook) for m in (self._project_conv, self._bn2)]
         # Pointwise Convolution
         x = self._project_conv(x)
         x = self._bn2(x)
@@ -85,9 +90,9 @@ class MBConvBlock(nn.Module):
             if drop_connect_rate:
                 x = drop_connect(x, p=drop_connect_rate, training=self.training)
             x = x + inputs  # skip connection
-            print('skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
+            print('** skipadd output=output+input', self.id_skip, self._block_args.stride, input_filters, output_filters)
         else:
-            print('no skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
+            print('** no skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
 
         return x
 

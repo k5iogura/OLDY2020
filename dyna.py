@@ -7,18 +7,23 @@ from pdb import set_trace
 from inspect import getmembers
 
 def hook(m, i, o):
-    sys.stdout.write("*********** ")
+    (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(m)
+    if in_channels  is None and len(i[0].shape) >= 2: in_channels  = i[0].shape[1]
+    if out_channels is None and len(o.shape)    >= 2: out_channels = o.shape[1]
+    print(" ** {} {} {} {} {} {} {} {}".format(name,i[0].shape[-1],o.shape[-1],in_channels,out_channels,kernel_size,stride,padding))
+#    set_trace()
     #anlz_block(m)
 #    print(m._get_name(),i[0].shape,o[0].shape)
     pass
 
 def set_hook(net):
+    assert isinstance(net, nn.Sequential),"dont use this others of nn.Sequential {}".format(type(net))
     for name, layer in net._modules.items():
         if isinstance(layer, nn.Sequential):
             pass
         else:
             layer.register_forward_hook(hook)
-            set_hook(layer)
+            #set_hook(layer)
 
 def anlz_submod(submod, out=None):
     class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
@@ -58,13 +63,13 @@ def anlz_submod(submod, out=None):
     except:
         pass
     name = submod.__name__ if 'function' in str(type(submod)) else name
-    if in_channels or 'function' in str(type(submod)):
-        print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
-    else:
-        print("{}".format(submod))
+#    if in_channels or 'function' in str(type(submod)):
+#        print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
+#    else:
+#        print("{}".format(submod))
     return (name, in_channels, out_channels, kernel_size, stride ,padding, eps)
 
-def anlz_block(block, out=None, no=""):
+def anlz_block_(block, out=None, no=""):
     block_name = block._get_name()
     no = "" if no == "" else "-"+str(no)
     print("{}{}".format(block_name,no))
@@ -75,4 +80,20 @@ def anlz_block(block, out=None, no=""):
         sys.stdout.write(' ')
         (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(submod)
     pass
+
+class anlz_interpolate():
+    def __init__(self, intensor=None):
+        if intensor is not None:
+            self.intensor_shape = intensor.shape
+
+    def info(self, gotensor, size=None, mode=None, align_corners=False):
+        print(" *** interpolate {} {} {} {}".format(gotensor.shape, size, mode, align_corners))
+
+class anlz_cat():
+    def __init__(self, intensor1, intensor2):
+        self.intensor1_shape = intensor1.shape
+        self.intensor2_shape = intensor2.shape
+
+    def info(self, gotensor):
+        print(" *** torch.cat {} {} {}".format(self.intensor1_shape, self.intensor2_shape, gotensor.shape))
 
