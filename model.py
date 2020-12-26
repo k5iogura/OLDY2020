@@ -56,6 +56,7 @@ class R_ASPP_module(nn.Module):
         print("<<< START R_ASPP >>>")
         print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
         print("<<< START ROUTE-1-1 >>>")
+        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-1-1 >>>"])
         print("IN {}".format(x.shape))
         set_hook(self.layer1)
         x_temp1 = self._act(self.layer1(x))
@@ -65,6 +66,7 @@ class R_ASPP_module(nn.Module):
         print("<<< ENDED ROUTE-1-1 >>>\n")
 
         print("<<< START ROUTE-1-2 >>>")
+        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-1-2 >>>"])
         print("IN {}".format(x.shape))
         # Squeeze and excitation module for Segmentation head
         self.avgpool.register_forward_hook(hook)
@@ -82,6 +84,7 @@ class R_ASPP_module(nn.Module):
         print("<<< ENDED ROUTE-1-2 >>>\n")
 
         print("<<< START ROUTE-1-AGRIGATE >>>")
+        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-1-AGRIGATE >>>"])
         print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
         anlz=anlz_product(x_temp2_weight)
         out = x_temp2_weight * x_temp1
@@ -102,6 +105,7 @@ class R_ASPP_module(nn.Module):
         print("<<< ENDED ROUTE-1-AGRIGATE >>>\n")
 
         print("<<< START ROUTE-2 >>>")
+        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-2 >>>"])
         print("IN {}".format(feature.shape))
         self.out_conv2.register_forward_hook(hook)
         feature = self.out_conv2(feature)
@@ -110,6 +114,7 @@ class R_ASPP_module(nn.Module):
         print("<<< ENDED ROUTE-2 >>>\n")
 
         print("<<< START ROUTE-AGRIGATE >>>")
+        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-AGRIGATE >>>"])
         # Small modification from the original paper, was:
         # out = out + feature
         print("IN-1 {} IN-2 {}".format(out.shape, feature.shape))

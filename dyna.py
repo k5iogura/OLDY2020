@@ -3,12 +3,20 @@ import os,sys
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+import csv
 from pdb import set_trace
 from inspect import getmembers
+
+# CSV
+fout = sys.stdout
+fout = open('maglinancy.csv','w')
+writer = csv.writer(fout)
+writer.writerow(['Unit','K','N','M','S','Fi','Fo','P','Comment'])
 
 def outKNMSFiFo(s):
     name,K,N,M,S,Fi,Fo,P,comstr=s
     print("{} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comstr))
+    writer.writerow([name,K,N,M,S,Fi,Fo,P,comstr])
 
 class com():
     def __init__(self):
@@ -21,7 +29,8 @@ class com():
         rv=''
         for c in reversed(self.comment):
             rv+=str(c)+'.'
-        rv='"'+rv+str(append)+'"'
+        #rv='"'+rv+str(append)+'"'
+        rv=rv+str(append)
         return str(rv)
 comment = com()
 
@@ -38,8 +47,7 @@ def hook(m, i, o):
     S=stride[-1] if isinstance(stride,tuple) or isinstance(stride,list) else stride
     P=padding
     comstr=comment.str()
-    outKNMSFiFo((" *** "+name,K,N,M,S,Fi,Fo,P,comstr))
- #   print(" ** {} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comstr))
+    outKNMSFiFo((name,K,N,M,S,Fi,Fo,P,comstr))
 
 def set_hook(net):
     assert isinstance(net, nn.Sequential),"dont use this others of nn.Sequential {}".format(type(net))
@@ -88,23 +96,18 @@ def anlz_submod(submod, out=None):
     except:
         pass
     name = submod.__name__ if 'function' in str(type(submod)) else name
-#    if in_channels or 'function' in str(type(submod)):
-#        print("{} {} {} {} {} {} {}".format(name, in_channels, out_channels, kernel_size, stride ,padding, eps))
-#    else:
-#        print("{}".format(submod))
     return (name, in_channels, out_channels, kernel_size, stride ,padding, eps)
 
-def anlz_block_(block, out=None, no=""):
-    block_name = block._get_name()
-    no = "" if no == "" else "-"+str(no)
-    print("{}{}".format(block_name,no))
-    modules = block.__dict__['_modules']
-    for k in modules.keys():
-        submod = modules[k]
-        #print("{}".format(submod))  #
-        sys.stdout.write(' ')
-        (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(submod)
-    pass
+#def anlz_block_(block, out=None, no=""):
+    #block_name = block._get_name()
+    #no = "" if no == "" else "-"+str(no)
+    #print("{}{}".format(block_name,no))
+    #modules = block.__dict__['_modules']
+    #for k in modules.keys():
+        #submod = modules[k]
+        #sys.stdout.write(' ')
+        #(name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(submod)
+    #pass
 
 class anlz_product():
     def __init__(self, intensor1):
@@ -118,8 +121,7 @@ class anlz_product():
         Fo=     gotensor.shape[-1]
         P=None
         comstr=comment.str(append="NUMPY PRODUCT IN1 AND IN2")
-        outKNMSFiFo((" *** (ProductOperator)",K,N,M,S,Fi,Fo,P,comstr))
-   #     print(" *** ProductOperator {} {} {} {} {} {} {}".format(K,N,M,S,Fi,Fo,comstr))
+        outKNMSFiFo(("(ProductOperator)",K,N,M,S,Fi,Fo,P,comstr))
 
 class anlz_plus():
     def __init__(self, intensor1):
@@ -132,9 +134,8 @@ class anlz_plus():
         Fi=self.intensor1_shape[-1]
         Fo=     gotensor.shape[-1]
         P=None
-        comstr=comment.str(append="SKIPADD FROM INPUT")
-        outKNMSFiFo((" *** (PlusOperator)",K,N,M,S,Fi,Fo,P,comstr))
-   #     print(" *** PlusOperator {} {} {} {} {} {} {}".format(K,N,M,S,Fi,Fo,comstr))
+        comstr=comment.str(append="SKIPADD CURRENT TENSOR AND BLOCK's INPUT")
+        outKNMSFiFo(("(PlusOperator)",K,N,M,S,Fi,Fo,P,comstr))
 
 #KNMSFiFo
 class anlz_interpolate():
@@ -153,8 +154,7 @@ class anlz_interpolate():
         P = None
         size = [i for i in size] if size is not None else size
         comstr=comment.str(append=" size="+str(size)+" mode="+mode+" align_corners="+str(align_corners))
-        outKNMSFiFo((" *** F.interpolate",K,N,M,S,Fi,Fo,P,comstr))
-   #     print(" *** interpolate {} {} {} {} {} {} {}".format(K,N,M,S,Fi,Fo,comstr))
+        outKNMSFiFo(("F.interpolate",K,N,M,S,Fi,Fo,P,comstr))
 
 class anlz_cat():
     def __init__(self, intensor1, intensor2):
@@ -171,6 +171,5 @@ class anlz_cat():
         Fo=     gotensor.shape[-1]
         P = None
         comstr=comment.str()
-        outKNMSFiFo((" *** torch.cat",K,N,M,S,Fi,Fo,P,comstr))
-        #print(" *** torch.cat {} {} {} {} {} {} {}".format(K,N,M,S,Fi,Fo,comstr))
+        outKNMSFiFo(("torch.cat",K,N,M,S,Fi,Fo,P,comstr))
 
