@@ -53,21 +53,22 @@ class R_ASPP_module(nn.Module):
     def forward(self, x, feature):
 
         dyna.comment.push('R_ASPP')
-        print("<<< START R_ASPP >>>")
-        print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
-        print("<<< START ROUTE-1-1 >>>")
-        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-1-1 >>>"])
-        print("IN {}".format(x.shape))
+    #    print("<<< START R_ASPP >>>")
+        outComment("<<< START R_ASPP >>>",x,feature)
+    #    print("IN-1 {} IN-2 {}".format(x.shape, feature.shape))
+    #    print("<<< START ROUTE-1-1 >>>")
+        outComment("<<< START ROUTE-1-1 >>> ",x)
+    #    print("IN {}".format(x.shape))
         set_hook(self.layer1)
         x_temp1 = self._act(self.layer1(x))
     #    anlz_block(self.layer1, no=1)
     #    anlz_submod(self._act)
-        print("GO {}".format(x_temp1.shape))
+    #    print("GO {}".format(x_temp1.shape))
         print("<<< ENDED ROUTE-1-1 >>>\n")
 
-        print("<<< START ROUTE-1-2 >>>")
-        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-1-2 >>>"])
-        print("IN {}".format(x.shape))
+    #    print("<<< START ROUTE-1-2 >>>")
+        outComment("<<< START ROUTE-1-2 >>> ",x)
+    #    print("IN {}".format(x.shape))
         # Squeeze and excitation module for Segmentation head
         self.avgpool.register_forward_hook(hook)
         self.layer2.register_forward_hook(hook)
@@ -83,9 +84,9 @@ class R_ASPP_module(nn.Module):
         print("GO {}".format(x_temp2_weight.shape))
         print("<<< ENDED ROUTE-1-2 >>>\n")
 
-        print("<<< START ROUTE-1-AGRIGATE >>>")
-        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-1-AGRIGATE >>>"])
-        print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
+    #    print("<<< START ROUTE-1-AGRIGATE >>>")
+        outComment("<<< START ROUTE-1-AGRIGATE >>> ",x_temp2_weight,x_temp1)
+    #    print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
         anlz=anlz_product(x_temp2_weight)
         out = x_temp2_weight * x_temp1
         anlz.info(out, x_temp1)
@@ -104,20 +105,20 @@ class R_ASPP_module(nn.Module):
         print("GO {}".format(out.shape))
         print("<<< ENDED ROUTE-1-AGRIGATE >>>\n")
 
-        print("<<< START ROUTE-2 >>>")
-        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-2 >>>"])
-        print("IN {}".format(feature.shape))
+    #    print("<<< START ROUTE-2 >>>")
+        outComment("<<< START ROUTE-2 >>> FEATURE_MAP ",feature)
+    #    print("IN {}".format(feature.shape))
         self.out_conv2.register_forward_hook(hook)
         feature = self.out_conv2(feature)
     #    anlz_submod(self.out_conv2)
         print("GO {}".format(feature.shape))
         print("<<< ENDED ROUTE-2 >>>\n")
 
-        print("<<< START ROUTE-AGRIGATE >>>")
-        outKNMSFiFo([None,None,None,None,None,None,None,None,"<<< START ROUTE-AGRIGATE >>>"])
+    #    print("<<< START ROUTE-AGRIGATE >>>")
+        outComment("<<< START ROUTE-AGRIGATE >>> ",out,feature)
         # Small modification from the original paper, was:
         # out = out + feature
-        print("IN-1 {} IN-2 {}".format(out.shape, feature.shape))
+    #    print("IN-1 {} IN-2 {}".format(out.shape, feature.shape))
         anlz = anlz_cat(out, feature)
         out = torch.cat((out, feature), dim=1)
         anlz.info(out)
@@ -156,8 +157,9 @@ class EfficientNet(nn.Module):
 
     def forward(self, x):
         dyna.comment.push('EFFICIENTNET')
-        print("<<< START EFFICIENTNET >>>")
-        print("IN {}".format(x.shape))
+    #    print("<<< START EFFICIENTNET >>>")
+        outComment("<<< START EFFICIENTNET >>>",x)
+    #    print("IN {}".format(x.shape))
         [m.register_forward_hook(hook) for m in (self.model._conv_stem, self.model._bn0, self.model._act)]
         x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
         feature_maps = []
@@ -208,6 +210,7 @@ class MalignancyDetector(nn.Module):
 
     def forward(self, x):
         dyna.comment.push("MAGLINANCYNET")
+        outComment("<<< START MAGLINANCYNET >>>",x)
     #    print("Shape x    = {}".format(x.shape))
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)

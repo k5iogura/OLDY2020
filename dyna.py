@@ -15,8 +15,28 @@ writer.writerow(['Unit','K','N','M','S','Fi','Fo','P','Comment'])
 
 def outKNMSFiFo(s):
     name,K,N,M,S,Fi,Fo,P,comstr=s
+    name="" if name is None else name
+    K="" if K is None else K
+    N="" if N is None else N
+    M="" if M is None else M
+    S="" if S is None else S
+    Fi="" if Fi is None else Fi
+    Fo="" if Fo is None else Fo
+    P="" if P is None else P
     print("{} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comstr))
     writer.writerow([name,K,N,M,S,Fi,Fo,P,comstr])
+
+def outComment(comstr,in1_tensor=None, in2_tensor=None):
+    in1_shape = in2_shape = None
+    if in1_tensor is not None: in1_shape = str([i for i in in1_tensor.shape])
+    if in2_tensor is not None: in2_shape = str([i for i in in2_tensor.shape])
+    if in1_tensor is not None:
+        comstr += "IN " if in2_tensor is None else "IN1 "
+        comstr += in1_shape
+        if in2_tensor is not None:
+            comstr += " IN2 "
+            comstr += in2_shape
+    outKNMSFiFo([None,None,None,None,None,None,None,None,comstr])
 
 class com():
     def __init__(self):
