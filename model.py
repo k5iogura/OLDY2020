@@ -83,8 +83,10 @@ class R_ASPP_module(nn.Module):
 
         print("<<< START ROUTE-1-AGRIGATE >>>")
         print("IN-1 {} IN-2 {}".format(x_temp2_weight.shape, x_temp1.shape))
+        anlz=anlz_product(x_temp2_weight)
         out = x_temp2_weight * x_temp1
-        print("PRODUCT-GO {}".format(out.shape))
+        anlz.info(out, x_temp1)
+    #    print("PRODUCT-GO {}".format(out.shape))
         print(out.shape)
         anlz = anlz_interpolate(out)
         out = F.interpolate(out, feature.size()[2:], mode='bilinear', align_corners=False)

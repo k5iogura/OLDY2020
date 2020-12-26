@@ -89,10 +89,12 @@ class MBConvBlock(nn.Module):
             # The combination of skip connection and drop connect brings about stochastic depth.
             if drop_connect_rate:
                 x = drop_connect(x, p=drop_connect_rate, training=self.training)
+            anlz = anlz_plus(x)
             x = x + inputs  # skip connection
-            print('** skipadd output=output+input', self.id_skip, self._block_args.stride, input_filters, output_filters)
-        else:
-            print('** no skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
+            anlz.info(x,inputs)
+    #        print('** skipadd output=output+input', self.id_skip, self._block_args.stride, input_filters, output_filters)
+    #    else:
+    #        print('** no skipadd', self.id_skip, self._block_args.stride, input_filters, output_filters)
 
         return x
 
