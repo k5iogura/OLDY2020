@@ -194,7 +194,7 @@ class MalignancyDetector(nn.Module):
 
         anlz = anlz_interpolate(out3)
         mask = F.interpolate(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
-        anlz.info(out3, size=x.size()[2:], mode='bilinear', align_corners=True)
+        anlz.info(mask, size=x.size()[2:], mode='bilinear', align_corners=True)
         dyna.comment.pop()
 
         return mask
