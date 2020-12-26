@@ -172,4 +172,4 @@ torch.cat,,19,38,,32,32,,R_ASPP.MAGLINANCYNET.
 ,,,,,,,,"<<< ENDED R_ASPP >>> GO [1, 38, 32, 32]"
 Dropout2d,,38,38,,32,32,,MAGLINANCYNET.
 Conv2d,1,38,2,1,32,32,"(0, 0)",MAGLINANCYNET.
-F.interpolate,256,2,2,,32,32,,"MAGLINANCYNET. size=[256, 256] mode=bilinear align_corners=True"
+F.interpolate,256,2,2,,32,256,,"MAGLINANCYNET. size=[256, 256] mode=bilinear align_corners=True"
