@@ -56,6 +56,7 @@ class R_ASPP_module(nn.Module):
         outComment("<<< START R_ASPP >>>",x,feature)
         outComment("<<< START ROUTE-1-1 >>> ",x)
         set_hook(self.layer1)
+        self._act.register_forward_hook(hook)
         x_temp1 = self._act(self.layer1(x))
         outCommentEnd("<<< ENDED ROUTE-1-1 >>> ",x_temp1)
 
