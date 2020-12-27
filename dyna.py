@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 import csv
+import numpy as np
 from pdb import set_trace
 from inspect import getmembers
 
@@ -12,10 +13,14 @@ fout = sys.stdout
 fout = open('maglinancy.csv','w')
 writer = csv.writer(fout)
 # KNMSFiFo : KernelSize In-Channels Out-Channels Stride InFeatureSize OutFeatureSize and Padding, Comment
-writer.writerow(['Unit','K','N','M','S','Fi','Fo','P','Comment'])
+writer.writerow(['Unit','K','N','M','S','Fi','Fo','P','Ti1','Ti2','To','Comment'])
+
+# For unique id of Tensor
+__baseNN=np.power(10,8)
+def uid(idx): return id(idx)%__baseNN
 
 def outKNMSFiFo(s):
-    name,K,N,M,S,Fi,Fo,P,comstr=s
+    name,K,N,M,S,Fi,Fo,P,Ti1,Ti2,To,comstr=s
     name="" if name is None else name
     K="" if K is None else K
     N="" if N is None else N
@@ -24,8 +29,11 @@ def outKNMSFiFo(s):
     Fi="" if Fi is None else Fi
     Fo="" if Fo is None else Fo
     P="" if P is None else P
-    print(re.sub('^ *','',"{} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comstr)))
-    writer.writerow([name,K,N,M,S,Fi,Fo,P,comstr])
+    Ti1="" if Ti1 is None else Ti1
+    Ti2="" if Ti2 is None else Ti2
+    To="" if To is None else To
+    print(re.sub('^ *','',"{} {} {} {} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,Ti1,Ti2,To,comstr)))
+    writer.writerow([name,K,N,M,S,Fi,Fo,P,Ti1,Ti2,To,comstr])
 
 def outComment(comstr,in1_tensor=None, in2_tensor=None):
     in1_shape = in2_shape = None
@@ -37,7 +45,7 @@ def outComment(comstr,in1_tensor=None, in2_tensor=None):
         if in2_tensor is not None:
             comstr += " IN2 "
             comstr += in2_shape
-    outKNMSFiFo([None,None,None,None,None,None,None,None,comstr])
+    outKNMSFiFo([None,None,None,None,None,None,None,None,None,None,None,comstr])
 
 def outCommentEnd(comstr,go1_tensor=None, go2_tensor=None, go3_tensor=None, go4_tensor=None):
     go1_shape = go2_shape = go3_shape = go4_shape = None
@@ -57,7 +65,7 @@ def outCommentEnd(comstr,go1_tensor=None, go2_tensor=None, go3_tensor=None, go4_
                 if go4_tensor is not None:
                     comstr += " GO4 "
                     comstr += go4_shape
-    outKNMSFiFo([None,None,None,None,None,None,None,None,comstr])
+    outKNMSFiFo([None,None,None,None,None,None,None,None,None,None,None,comstr])
 
 class com():
     def __init__(self):
@@ -87,7 +95,11 @@ def hook(m, i, o):
     S=stride[-1] if isinstance(stride,tuple) or isinstance(stride,list) else stride
     P=padding
     comstr=comment.str()
-    outKNMSFiFo((name,K,N,M,S,Fi,Fo,P,comstr))
+    Ti1=uid(i[0]) if len(i)>=1 else None
+    Ti2=uid(i[1]) if len(i)>=2 else None
+    To=uid(o) if o is not None else None
+    outKNMSFiFo((name,K,N,M,S,Fi,Fo,P,Ti1,Ti2,To,comstr))
+    assert len(i) <= 2, "{} inputs are not supported".format(len(i))
 
 def set_hook(net):
     assert isinstance(net, nn.Sequential),"dont use this others of nn.Sequential {}".format(type(net))
@@ -96,7 +108,6 @@ def set_hook(net):
             pass
         else:
             layer.register_forward_hook(hook)
-            #set_hook(layer)
 
 def anlz_submod(submod, out=None):
     class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
@@ -138,20 +149,10 @@ def anlz_submod(submod, out=None):
     name = submod.__name__ if 'function' in str(type(submod)) else name
     return (name, in_channels, out_channels, kernel_size, stride ,padding, eps)
 
-#def anlz_block_(block, out=None, no=""):
-    #block_name = block._get_name()
-    #no = "" if no == "" else "-"+str(no)
-    #print("{}{}".format(block_name,no))
-    #modules = block.__dict__['_modules']
-    #for k in modules.keys():
-        #submod = modules[k]
-        #sys.stdout.write(' ')
-        #(name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(submod)
-    #pass
-
 class anlz_product():
     def __init__(self, intensor1):
         self.intensor1_shape=intensor1.shape
+        self.Ti1 = uid(intensor1)
     def info(self, gotensor, intensor2):
         K=None
         N=self.intensor1_shape[1]
@@ -160,12 +161,15 @@ class anlz_product():
         Fi=self.intensor1_shape[-1]
         Fo=     gotensor.shape[-1]
         P=None
-        comstr=comment.str(append="NUMPY PRODUCT IN1 AND IN2")
-        outKNMSFiFo(("(ProductOperator)",K,N,M,S,Fi,Fo,P,comstr))
+        Ti2=uid(intensor2)
+        To=uid(gotensor)
+        comstr=comment.str(append="NUMPY PRODUCT")
+        outKNMSFiFo(("(ProductOperator)",K,N,M,S,Fi,Fo,P,self.Ti1,Ti2,To,comstr))
 
 class anlz_plus():
     def __init__(self, intensor1):
         self.intensor1_shape=intensor1.shape
+        self.Ti1 = uid(intensor1)
     def info(self, gotensor, intensor2):
         K=None
         N=self.intensor1_shape[1]
@@ -174,14 +178,18 @@ class anlz_plus():
         Fi=self.intensor1_shape[-1]
         Fo=     gotensor.shape[-1]
         P=None
-        comstr=comment.str(append="SKIPADD CURRENT TENSOR AND BLOCK's INPUT")
-        outKNMSFiFo(("(PlusOperator)",K,N,M,S,Fi,Fo,P,comstr))
+        #comstr=comment.str(append="SKIPADD CURRENT TENSOR AND BLOCK's INPUT")
+        Ti2=uid(intensor2)
+        To=uid(gotensor)
+        comstr=comment.str(append=" SKIPADD")
+        outKNMSFiFo(("(PlusOperator)",K,N,M,S,Fi,Fo,P,self.Ti1,Ti2,To,comstr))
 
 #KNMSFiFo
 class anlz_interpolate():
     def __init__(self, intensor=None):
         intensor_shape = None
         if intensor is not None: self.intensor_shape = intensor.shape
+        self.Ti1=uid(intensor) if intensor is not None else None
 
     def info(self, gotensor, size=None, mode=None, align_corners=False):
         gotensor_shape = gotensor.shape # N,C,H,W
@@ -194,13 +202,17 @@ class anlz_interpolate():
         P = None
         size = [i for i in size] if size is not None else size
         comstr=comment.str(append=" size="+str(size)+" mode="+mode+" align_corners="+str(align_corners))
-        outKNMSFiFo(("F.interpolate",K,N,M,S,Fi,Fo,P,comstr))
+        Ti2=None
+        To=uid(gotensor)
+        outKNMSFiFo(("F.interpolate",K,N,M,S,Fi,Fo,P,self.Ti1,Ti2,To,comstr))
 
 class anlz_cat():
     def __init__(self, intensor1, intensor2):
         self.intensor1_shape = intensor1.shape
         self.intensor2_shape = intensor2.shape
         assert self.intensor1_shape == self.intensor2_shape
+        self.Ti1=uid(intensor1) if intensor1 is not None else None
+        self.Ti2=uid(intensor2) if intensor2 is not None else None
 
     def info(self, gotensor):
         K=None
@@ -211,5 +223,6 @@ class anlz_cat():
         Fo=     gotensor.shape[-1]
         P = None
         comstr=comment.str()
-        outKNMSFiFo(("torch.cat",K,N,M,S,Fi,Fo,P,comstr))
+        To=uid(gotensor)
+        outKNMSFiFo(("torch.cat",K,N,M,S,Fi,Fo,P,self.Ti1,self.Ti2,To,comstr))
 
