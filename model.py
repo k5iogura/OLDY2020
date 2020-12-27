@@ -84,7 +84,6 @@ class R_ASPP_module(nn.Module):
         # Compress feature maps to number of classes
         self.out_conv1.register_forward_hook(hook)
         out = self.out_conv1(out)
-        #feature = self.out_conv2(feature)
         outCommentEnd("<<< ENDED ROUTE-1-AGRIGATE >>> ",out)
 
         outComment("<<< START ROUTE-2 >>> FEATURE_MAP ",feature)
