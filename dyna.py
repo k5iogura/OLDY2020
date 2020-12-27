@@ -1,4 +1,4 @@
-import os,sys
+import os,sys,re
 
 import torch.nn as nn
 import torch
@@ -11,6 +11,7 @@ from inspect import getmembers
 fout = sys.stdout
 fout = open('maglinancy.csv','w')
 writer = csv.writer(fout)
+# KNMSFiFo : KernelSize In-Channels Out-Channels Stride InFeatureSize OutFeatureSize and Padding, Comment
 writer.writerow(['Unit','K','N','M','S','Fi','Fo','P','Comment'])
 
 def outKNMSFiFo(s):
@@ -23,7 +24,7 @@ def outKNMSFiFo(s):
     Fi="" if Fi is None else Fi
     Fo="" if Fo is None else Fo
     P="" if P is None else P
-    print("{} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comstr))
+    print(re.sub('^ *','',"{} {} {} {} {} {} {} {} {}".format(name,K,N,M,S,Fi,Fo,P,comstr)))
     writer.writerow([name,K,N,M,S,Fi,Fo,P,comstr])
 
 def outComment(comstr,in1_tensor=None, in2_tensor=None):
@@ -74,7 +75,6 @@ class com():
         return str(rv)
 comment = com()
 
-# KNMSFiFo
 def hook(m, i, o):
     (name, in_channels, out_channels, kernel_size, stride ,padding, eps)=anlz_submod(m)
     if in_channels  is None and len(i[0].shape) >= 2: in_channels  = i[0].shape[1]
