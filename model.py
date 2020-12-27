@@ -134,13 +134,14 @@ class EfficientNet(nn.Module):
         x = self.model._act(self.model._bn0(self.model._conv_stem(x)))
         feature_maps = []
         for idx, block in enumerate(self.model._blocks):
+            outComment("<<< MBConvBlock-{} >>> ".format(idx), x)
             dyna.comment.push("MBConvBlock-{}".format(idx))
             drop_connect_rate = self.model._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self.model._blocks)
-            xin_shape = x.shape
             x = block(x, drop_connect_rate=drop_connect_rate)
             dyna.comment.pop()
+            outCommentEnd(">>> ENDED MBConvBlock <<< ", x)
             if block._depthwise_conv.stride == [2, 2]:
                 feature_maps.append(x)
                 if len(feature_maps)==4:break
@@ -178,7 +179,7 @@ class MalignancyDetector(nn.Module):
 
     def forward(self, x):
         dyna.comment.push("MAGLINANCYNET")
-        outComment("<<< START MAGLINANCYNET >>>",x)
+        outComment("<<< START MAGLINANCYNET >>> ",x)
         #_, c2, _, c4 = self.base_forward(x)
         _1, c2, _3, c4 = self.base_forward(x)
 
@@ -196,6 +197,7 @@ class MalignancyDetector(nn.Module):
         anlz.info(mask, size=x.size()[2:], mode='bilinear', align_corners=True)
         dyna.comment.pop()
 
+        outCommentEnd(">>> ENDED MAGLINANCYNET <<< ",mask)
         return mask
 
     def _init_weight(self):
