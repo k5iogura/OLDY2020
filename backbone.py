@@ -67,8 +67,9 @@ class MBConvBlock(nn.Module):
 
         # Expansion and Depthwise Convolution
         x = inputs
+        self._act.register_forward_hook(hook)
         if self._block_args.expand_ratio != 1:
-            [m.register_forward_hook(hook) for m in (self._expand_conv, self._bn0, self._act)]
+            [m.register_forward_hook(hook) for m in (self._expand_conv, self._bn0)]
             x = self._expand_conv(inputs)
             x = self._bn0(x)
             x = self._act(x)
