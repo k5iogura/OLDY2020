@@ -110,7 +110,7 @@ def set_hook(net):
             layer.register_forward_hook(hook)
 
 def anlz_submod(submod, out=None):
-    class_name = in_channels = out_channels = kernel_size = stride = padding = eps = None
+    class_name = in_channels = out_channels = kernel_size = stride = padding = eps = bias = None
     try:
         name = submod._get_name()
     except:
@@ -146,6 +146,13 @@ def anlz_submod(submod, out=None):
         eps = submod.eps
     except:
         pass
+    try:
+        bias = submod.bias
+    except:
+        pass
+
+    if bias is not None and class_name != torch.nn.modules.batchnorm.BatchNorm2d:
+        print("\t\tBIAS {} {}".format(class_name,bias.shape))
     name = submod.__name__ if 'function' in str(type(submod)) else name
     return (name, in_channels, out_channels, kernel_size, stride ,padding, eps)
 
